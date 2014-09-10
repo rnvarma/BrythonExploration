@@ -1,2 +1,1 @@
-yay
-
+This is the singular area to develop in so that we can all see what everyone else is working on. Please create a directory titled as your name and put all your code into there so that we have some semblance of organization. Thanks!
