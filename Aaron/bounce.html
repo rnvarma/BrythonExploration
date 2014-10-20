@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, user-scalable=no">
+	<style>
+	* {
+		margin: 0;
+		padding: 0;
+	}
+	html, body {
+		width: 100%;
+		height: 100%;
+	}
+	canvas {
+		display: block;
+	}
+	</style>
+	<title>Brython!</title>
+	<script src="brython/brython.js"></script>
+</head>
+<body onload="brython(1)">
+<canvas id="canvas"></canvas>
+<div id="console" style="display:block;"></div>
+<script type="text/python" src="bounce.py"></script>
+</body>
+</html>
