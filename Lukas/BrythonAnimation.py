@@ -1,4 +1,5 @@
 import browser, sys, javascript
+from contextWrapper import ContextWrapper
 
 class Struct(): pass
 
@@ -66,15 +67,34 @@ def _get_key(event):
         key.keysym = KEY_CODE_NAMES.get(keyCode)
     return key
 
+def _create_touch_dict(touchList):
+    touchDict = dict()
+    for touch in touchList:
+        t = Struct()
+        t.x, t.y = touch.pageX, touch.pageY
+        touchDict[touch.identifier] = t
+    return touchDict
+
 class BrythonAnimation(object):
-    def onKeyDown(self, event):
-        print("Press -- char: %s, keysym: %s" % (event.char, event.keysym))
+    def init(self): pass
+    def onKeyDown(self, event): pass
+    def onKeyRelease(self, event): pass
+    def onDrag(self, event): pass
+    def redrawAll(self): pass
+    def onTouch(self, touches): pass
+    def onTouchDrag(self, touches): pass
+    def onTouchRelease(self, touches): pass
+    def onTouchCancel(self, touches): pass
 
-    def onKeyRelease(self, event):
-        print("Release -- char: %s, keysym: %s" % (event.char, event.keysym))
+    ############################################################################
+    ############################################################################
+    ## Initialization
+    ############################################################################
+    ############################################################################
 
-    def onDrag(self, event):
-        pass
+    def _redraw_all(self):
+        self.context.clear()
+        self.redrawAll()
 
     def _key_ev(self, event, down=True):
         if down and self._last_key_ev != "down":
@@ -83,9 +103,20 @@ class BrythonAnimation(object):
         elif (not down) and self._last_key_ev != "up":
             self.onKeyRelease(_get_key(event))
             self._last_key_ev = "up"
+        self._redraw_all()
 
     def _touch(self, event):
-        print ("Touch event: %s" % event.type)
+        changes = _create_touch_dict(event.changes)
+        browser.window.alert(event.type)
+        if event.type == "touchstart":
+            self.onTouch(changes)
+        elif event.type == "touchmove":
+            self.onTouchDrag(changes)
+        elif event.type == "touchend":
+            self.onTouchRelease(changes)
+        elif event.type == "touchcancel":
+            self.onTouchCancel(changes)
+        self._redraw_all()
 
     def _init_mouse(self):
         pass
@@ -110,14 +141,21 @@ class BrythonAnimation(object):
     def _init_vibrate(self):
         pass
 
+    def _init(self):
+        self.context = ContextWrapper(self.canvas)
+        self.init()
+
     def __init__(self, canvasID="brythonCanvas", mouse=False, keys=False,
                  touch=False, tilt=False, geolocation=False, vibrate=False):
         self.canvas = browser.document[canvasID]
+        self.width = self.canvas.width
+        self.height = self.canvas.height
         if mouse: self._init_mouse()
         if keys: self._init_keys()
         if touch: self._init_touch()
         if tilt: self._init_tilt()
         if geolocation: self._init_geolocation()
         if vibrate: self._init_vibrate()
+        self._init()
 
-BrythonAnimation(keys=True)
+#BrythonAnimation(keys=True, touch=True)
