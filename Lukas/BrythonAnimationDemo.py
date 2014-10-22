@@ -9,7 +9,7 @@ class Demo(BrythonAnimation):
         self.ovals = dict()
 
     def onKeyDown(self, event):
-        browser.window.alert(event.keysym)
+        print(event.keysym)
 
     def redrawAll(self):
         self.context.create_rectangle(self.width/2, self.height/2, self.width, self.height, fill="#ff0000")
