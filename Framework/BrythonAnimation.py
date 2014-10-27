@@ -106,7 +106,6 @@ class BrythonAnimation(object):
         self._redraw_all()
 
     def _touch(self, event):
-        print(event.type)
         changes = _create_touch_dict(event.changedTouches)
         if event.type == "touchstart":
             self.onTouch(changes)
