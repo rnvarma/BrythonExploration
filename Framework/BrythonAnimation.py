@@ -132,13 +132,56 @@ class BrythonAnimation(object):
         browser.window.addEventListener("touchcancel", lambda event: self._touch(event))
 
     def _init_tilt(self):
-        pass
+        self._tilt_event = None
+        def on_tilt(event):
+            self._tilt_event = event
+        browser.window.addEventListener('deviceorientation', on_tilt)
+
+    def tilt_supported(self):
+        return self._tilt_enabled and self._tilt_event != None
+
+    def get_tilt(self):
+        return self._tilt_event
 
     def _init_geolocation(self):
-        pass
+        self._geolocation_event = None
+        self._geolocation_allowed = False
+        if not hasattr(browser.window.navigator, 'geolocation'): return
+
+        def on_geolocation(event):
+            self._geolocation_allowed = True
+            self._geolocation_event = event.coords
+            print(self.get_geolocation())
+
+        def on_geolocation_error(error):
+            self._geolocation_allowed = False
+
+        browser.window.navigator.geolocation.watchPosition(on_geolocation,
+                                                           on_geolocation_error)
+
+    def geolocation_supported(self):
+        return (self._geolocation_enabled and
+                hasattr(browser.window.navigator, 'geolocation') and
+                self._geolocation_allowed)
+
+    def get_geolocation(self):
+        return self._geolocation_event
 
     def _init_vibrate(self):
-        pass
+        self._vibrate_fn = None
+        for attr in ['vibrate', 'webkitVibrate', 'mozVibrate', 'msVibrate']:
+            if hasattr(browser.window.navigator, attr):
+                self._vibrate_fn = getattr(browser.window.navigator, attr)
+                break
+
+    def vibrate_supported(self):
+        return self._vibrate_enabled and self._vibrate_fn != None
+
+    def vibrate(self, duration):
+        self._vibrate_fn(duration)
+
+    def stop_vibration(self):
+        self._vibrate_fn(0)
 
     def _init(self):
         self.context = ContextWrapper(self.canvas)
@@ -152,9 +195,13 @@ class BrythonAnimation(object):
         if mouse: self._init_mouse()
         if keys: self._init_keys()
         if touch: self._init_touch()
+        self._tilt_enabled = tilt
         if tilt: self._init_tilt()
+        self._geolocation_enabled = geolocation
         if geolocation: self._init_geolocation()
+        self._vibrate_enabled = vibrate
         if vibrate: self._init_vibrate()
         self._init()
 
-#BrythonAnimation(keys=True, touch=True)
+a = BrythonAnimation(keys=True, touch=True, geolocation=True)
+print(a.get_geolocation())
