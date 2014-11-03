@@ -1,5 +1,6 @@
 import browser, sys, javascript
 from contextWrapper import ContextWrapper
+from browser import ajax
 
 class Struct(): pass
 
@@ -186,6 +187,21 @@ class BrythonAnimation(object):
     def _init(self):
         self.context = ContextWrapper(self.canvas)
         self.init()
+
+    def send(self, msg, callback):
+        POST_URL = "http://128.237.212.209:8080/"
+        req = ajax.ajax()
+        req.bind('complete', lambda data: self.callback(data))
+        req.open('POST', POST_URL, True)
+        data = {'message': 'testing if message sending works'}
+        req.send(msg)
+
+    def recieve(self, callback):
+        GET_URL = "http://128.237.212.209:8080/"
+        req = ajax.ajax()
+        req.bind('complete', lambda data: self.callback(data))
+        req.open('GET', GET_URL, True)
+        req.send({"woooho":"woo"})
 
     def __init__(self, canvasID="brythonCanvas", mouse=False, keys=False,
                  touch=False, tilt=False, geolocation=False, vibrate=False):
