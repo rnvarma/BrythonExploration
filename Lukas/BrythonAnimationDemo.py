@@ -38,5 +38,4 @@ class Demo(BrythonAnimation):
             coords = self.ovals[identifier]
             self.context.create_circle(coords.x, coords.y, 30, fill="#0000ff")
 
-browser.window.alert(rgbString(1, 255, 100))
 Demo(touch=True, keys=True)
