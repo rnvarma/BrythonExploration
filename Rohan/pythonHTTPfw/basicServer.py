@@ -61,6 +61,7 @@ class ServerFramework(BaseHTTPRequestHandler):
   def onGetRequest(self):
     # called on get requests to server
     # returns : a string message to be sent back to the client
+    return ""
 
   def run(self, PORT_NUMBER = 8080):
     self.initServer()
