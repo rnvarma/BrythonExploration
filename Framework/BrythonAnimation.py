@@ -1,4 +1,5 @@
 import browser, sys, javascript
+import browser.timer
 from contextWrapper import ContextWrapper
 
 class Struct(): pass
@@ -79,12 +80,15 @@ class BrythonAnimation(object):
     def init(self): pass
     def onKeyDown(self, event): pass
     def onKeyRelease(self, event): pass
-    def onDrag(self, event): pass
+    def onMouseDown(self, event): pass
+    def onMouseRelease(self, event): pass
+    def onMouseMove(self, event): pass
     def redrawAll(self): pass
     def onTouch(self, touches): pass
     def onTouchDrag(self, touches): pass
     def onTouchRelease(self, touches): pass
     def onTouchCancel(self, touches): pass
+    def onTimerFired(self): pass
 
     ############################################################################
     ############################################################################
@@ -118,7 +122,20 @@ class BrythonAnimation(object):
         self._redraw_all()
 
     def _init_mouse(self):
-        pass
+        def mouseDownWrapper(event):
+            self._redraw_all()
+            self.onMouseDown(event)
+        def mouseUpWrapper(event):
+            self._redraw_all()
+            self.onMouseRelease(event)
+        self.canvas.bind("mousedown", mouseDownWrapper)
+        self.canvas.bind("mouseup", mouseUpWrapper)
+
+    def _init_mouseMotion(self):
+        def mouseMoveWrapper(event):
+            self._redraw_all()
+            self.onMouseMove(event)
+        browser.document.bind("mousemove", mouseMoveWrapper)
 
     def _init_keys(self):
         self._last_key_ev = None
@@ -134,11 +151,11 @@ class BrythonAnimation(object):
     def _init_tilt(self):
         self._tilt_event = None
         def on_tilt(event):
-            self._tilt_event = event
+            self._tilt_event = (event.alpha, event.beta, event.gamma)
         browser.window.addEventListener('deviceorientation', on_tilt)
 
     def tilt_supported(self):
-        return self._tilt_enabled and self._tilt_event != None
+        return self._tilt_enabled and self._tilt_event != None and None not in self._tilt_event
 
     def get_tilt(self):
         return self._tilt_event
@@ -151,7 +168,6 @@ class BrythonAnimation(object):
         def on_geolocation(event):
             self._geolocation_allowed = True
             self._geolocation_event = event.coords
-            print(self.get_geolocation())
 
         def on_geolocation_error(error):
             self._geolocation_allowed = False
@@ -187,12 +203,25 @@ class BrythonAnimation(object):
         self.context = ContextWrapper(self.canvas)
         self.init()
 
-    def __init__(self, canvasID="brythonCanvas", mouse=False, keys=False,
-                 touch=False, tilt=False, geolocation=False, vibrate=False):
+    def onTick(self, timestamp):
+        if (timestamp - self._lastFrame >= self.timerDelay):
+            self._lastFrame = timestamp
+            self.onTimerFired()
+            self._redraw_all()
+        browser.timer.request_animation_frame(self.onTick)
+
+
+    def __init__(self, canvasID="brythonCanvas"):
         self.canvas = browser.document[canvasID]
         self.width = self.canvas.width
         self.height = self.canvas.height
+        self._init()
+
+    def run(self, timerDelay=250, mouse=False, mouseMotion=False,
+            keys=False, touch=False, tilt=False, geolocation=False,
+            vibrate=False):
         if mouse: self._init_mouse()
+        if mouseMotion: self._init_mouseMotion()
         if keys: self._init_keys()
         if touch: self._init_touch()
         self._tilt_enabled = tilt
@@ -201,7 +230,8 @@ class BrythonAnimation(object):
         if geolocation: self._init_geolocation()
         self._vibrate_enabled = vibrate
         if vibrate: self._init_vibrate()
-        self._init()
+        # Start the timer
+        self.timerDelay = timerDelay
+        self._lastFrame = 0
+        browser.timer.request_animation_frame(self.onTick)
 
-a = BrythonAnimation(keys=True, touch=True, geolocation=True)
-print(a.get_geolocation())
