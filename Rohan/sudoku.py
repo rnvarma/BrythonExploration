@@ -3,129 +3,181 @@
 # A very simple demo of a Brython browser-based game
 # By David Kosbie
 
-import math, browser, time, javascript
+import math, browser, time, javascript, json
+
+from browser import ajax
 
 # Use jsmath.random (since "import random" is not working very well)
 jsmath = javascript.JSObject(browser.window["Math"])
 random = jsmath.random
 
+def onMessageSend(req):
+  print("got here")
+  print(req.text)
+
+def onMessageRecieve(req):
+  print("got here")
+  print(req.text)
+
 def onTimer(ticks):
+  if data.currNumber == 0:
+    data.markActive = True
+  else:
+    data.markActive = False
   draw()
 
 def onKeyDown(key):
-  try:
-    data.currNumber = int(key)
-  except:
-    if key == "Up":
-      data.selectRow = (data.selectRow - 1) % data.rows
-    elif key == "Down":
-      data.selectRow = (data.selectRow + 1) % data.rows
-    elif key == "Right":
-      data.selectCol = (data.selectCol + 1) % data.cols
-    elif key == "Left":
-      data.selectCol = (data.selectCol - 1) % data.cols
-    elif key == "Return":
-      if not data.board[data.selectRow][data.selectCol][1]:
-        data.board[data.selectRow][data.selectCol] = [data.currNumber, True]
+  if key in "123456789":
+    if not data.board[data.selectRow][data.selectCol][1]:
+      data.board[data.selectRow][data.selectCol] = [key, False, []]
+  elif key == "Up":
+    data.selectRow = (data.selectRow - 1) % data.rows
+  elif key == "Down":
+    data.selectRow = (data.selectRow + 1) % data.rows
+  elif key == "Right":
+    data.selectCol = (data.selectCol + 1) % data.cols
+  elif key == "Left":
+    data.selectCol = (data.selectCol - 1) % data.cols
+  elif key == "Backspace":
+    data.board[data.selectRow][data.selectCol] = [0, False, []]
+  elif key == "s":
+    POST_URL = "http://128.237.212.209:8080/"
+    req = ajax.ajax()
+    req.bind('complete', onMessageSend)
+    req.open('POST', POST_URL, True)
+    data = {'message': 'testing if message sending works'}
+    req.send(data)
+  elif key == "g":
+    GET_URL = "http://128.237.212.209:8080/echo"
+    req = ajax.ajax()
+    req.bind('complete', onMessageRecieve)
+    req.open('GET', GET_URL, True)
+    req.send({"woooho":"woo"})
+  data.currNumber = data.board[data.selectRow][data.selectCol][0]
+  # elif key == "Return":
+  #   if not data.board[data.selectRow][data.selectCol][1]:
+  #     data.board[data.selectRow][data.selectCol] = [data.currNumber, False]
+
+def getRowColFromXY(x,y):
+  x,y = x - data.xMargin, y - data.yMargin
+  row, col= int(y //data.boxH), int(x //data.boxW)
+  return row, col
 
 def onMouseDown(x, y): pass
 
-def onMouseMove(x, y): pass
+def onMouseMove(x, y):
+  row, col= getRowColFromXY(x,y)
+  if row >= 0 and row < data.rows and col >=0 and col < data.cols:
+    data.hoverRow = row
+    data.hoverCol = col
+
+def getMakeRow(x,y):
+  x, y = x - data.markBoxStartX, y - data.markBoxStartY
+  col = 0 if 0 <= x <= data.markBoxSize else -1
+  row = y // data.markBoxSize
+  return row, col
 
 def onMouseUp(x, y):
-  x,y = x - data.xMargin, y - data.yMargin
-  row, col= int(y //data.boxH), int(x //data.boxW)
+  row, col = getRowColFromXY(x,y)
   if row >= 0 and row < data.rows and col >=0 and col < data.cols:
-    if not data.board[row][col][1]:
-      data.board[row][col] = [data.currNumber, False]
+    # if not data.board[row][col][1]:
+    #   data.board[row][col] = [data.currNumber, False]
     data.selectRow, data.selectCol = row, col
+    data.currNumber = data.board[data.selectRow][data.selectCol][0]
+  elif data.markActive:
+    # potentially clicked on the marker bar:
+    row, col = getMakeRow(x,y)
+    if col == 0 and row >= 0 and row < len(data.markValues):
+      val = data.markValues[row] # 1d list so col is just an indicator var
+      if val not in data.board[data.selectRow][data.selectCol][2]:
+        data.board[data.selectRow][data.selectCol][2].append(val)
 
 def onKeyUp(key): pass
 
 def onResize(): pass
 
 def onInit():
-  data.board = [[[0, False],
-  [8, True],
-  [0, False],
-  [9, True],
-  [1, True],
-  [0, False],
-  [5, True],
-  [4, True],
-  [0, False]],
- [[0, False],
-  [5, True],
-  [0, False],
-  [0, False],
-  [0, False],
-  [4, True],
-  [6, True],
-  [0, False],
-  [3, True]],
- [[7, True],
-  [0, False],
-  [0, False],
-  [0, False],
-  [0, False],
-  [5, True],
-  [1, True],
-  [0, False],
-  [0, False]],
- [[0, False],
-  [0, False],
-  [6, True],
-  [0, False],
-  [3, True],
-  [0, False],
-  [0, False],
-  [5, True],
-  [9, True]],
- [[3, True],
-  [0, False],
-  [0, False],
-  [7, True],
-  [0, False],
-  [6, True],
-  [0, False],
-  [0, False],
-  [2, True]],
- [[4, True],
-  [7, True],
-  [0, False],
-  [0, False],
-  [2, True],
-  [0, False],
-  [8, True],
-  [0, False],
-  [0, False]],
- [[0, False],
-  [0, False],
-  [9, True],
-  [3, True],
-  [0, False],
-  [0, False],
-  [0, False],
-  [0, False],
-  [4, True]],
- [[1, True],
-  [0, False],
-  [7, True],
-  [6, True],
-  [0, False],
-  [0, False],
-  [0, False],
-  [8, True],
-  [0, False]],
- [[0, False],
-  [2, True],
-  [4, True],
-  [0, False],
-  [9, True],
-  [7, True],
-  [0, False],
-  [6, True],
-  [0, False]]]
+  data.board = [[[0, False, []],
+  [8, True, []],
+  [0, False, []],
+  [9, True, []],
+  [1, True, []],
+  [0, False, []],
+  [5, True, []],
+  [4, True, []],
+  [0, False, []]],
+ [[0, False, []],
+  [5, True, []],
+  [0, False, []],
+  [0, False, []],
+  [0, False, []],
+  [4, True, []],
+  [6, True, []],
+  [0, False, []],
+  [3, True, []]],
+ [[7, True, []],
+  [0, False, []],
+  [0, False, []],
+  [0, False, []],
+  [0, False, []],
+  [5, True, []],
+  [1, True, []],
+  [0, False, []],
+  [0, False, []]],
+ [[0, False, []],
+  [0, False, []],
+  [6, True, []],
+  [0, False, []],
+  [3, True, []],
+  [0, False, []],
+  [0, False, []],
+  [5, True, []],
+  [9, True, []]],
+ [[3, True, []],
+  [0, False, []],
+  [0, False, []],
+  [7, True, []],
+  [0, False, []],
+  [6, True, []],
+  [0, False, []],
+  [0, False, []],
+  [2, True, []]],
+ [[4, True, []],
+  [7, True, []],
+  [0, False, []],
+  [0, False, []],
+  [2, True, []],
+  [0, False, []],
+  [8, True, []],
+  [0, False, []],
+  [0, False, []]],
+ [[0, False, []],
+  [0, False, []],
+  [9, True, []],
+  [3, True, []],
+  [0, False, []],
+  [0, False, []],
+  [0, False, []],
+  [0, False, []],
+  [4, True, []]],
+ [[1, True, []],
+  [0, False, []],
+  [7, True, []],
+  [6, True, []],
+  [0, False, []],
+  [0, False, []],
+  [0, False, []],
+  [8, True, []],
+  [0, False, []]],
+ [[0, False, []],
+  [2, True, []],
+  [4, True, []],
+  [0, False, []],
+  [9, True, []],
+  [7, True, []],
+  [0, False, []],
+  [6, True, []],
+  [0, False, []]]]
   data.w = browser.window.innerWidth
   data.h = browser.window.innerHeight
   data.boxW = data.boxH = min((data.w - 100)/9.0, (data.h-100)/9.0)
@@ -133,26 +185,55 @@ def onInit():
   data.boardW = data.boardH = data.rows * data.boxH
   data.xMargin = (data.w - (data.cols * data.boxW))/2
   data.yMargin = (data.h - (data.rows * data.boxH))/2
-  data.currNumber = 1
+  data.currNumber = 0
   data.currNumX = data.xMargin/2
-  data.currNumY = data.h/2
-  data.currNumText = "Currently Selected Number:"
+  data.currNumY = data.yMargin * 2* 2
+  data.currNumText = "Currently Selected Tile:"
   data.selectRow = 0
   data.selectCol = 0
+  data.hoverCol = 0
+  data.hoverRow = 0
+  data.markValues = range(1,10)
+  data.markBoxSize = data.boxH * 3 / 5
+  data.markBoxStartX = data.xMargin + data.boardW + 60
+  data.markBoxStartY = data.yMargin * 2
+  data.markText = "Mark a Number:"
+  data.markActive = False
+  data.markSize = data.boxH / 3
+  data.markList = [[1,2,3],[4,5,6],[7,8,9]]
+
+def drawMarkNums(pieceRow, pieceCol, top, left):
+  for row in range(3):
+    for col in range(3):
+      elem = data.markList[row][col]
+      if elem in data.board[pieceRow][pieceCol][2]:
+        drawX = left + data.markSize * col
+        drawY = top + data.markSize * row
+        print(drawX, drawY)
+        context.fillText(str(elem), drawX, drawY)
+
 
 def drawBoard():
   context.beginPath()
   context.strokeStyle = "black"
-  context.font = "30px Arial"
+  context.font = "30px fantasy"
   context.lineWidth = 2
   for row in range(data.rows):
     for col in range(data.cols):
+      context.fillStyle = "#FFF8E3"
       top = data.yMargin + row * data.boxH
       left = data.xMargin + col * data.boxW
       context.rect(left,top,data.boxW,data.boxH)
+      context.fillRect(left,top,data.boxW,data.boxH)
       textx, texty = top + data.boxH/2, left + data.boxW/2
+      if row == data.hoverRow and col == data.hoverCol:
+        context.fillStyle = "#EBDDCB"
+        context.fillRect(left,top,data.boxW,data.boxH)
       if data.board[row][col][0] != 0:
+        context.fillStyle = "black"
         context.fillText(str(data.board[row][col][0]), texty,textx)
+      else:
+        drawMarkNums(row, col, top, left)
   context.stroke()
   context.closePath()
 
@@ -171,24 +252,49 @@ def drawBoardLines():
   context.closePath()
 
 def drawCurrNum():
-  context.fillText(str(data.currNumber), data.currNumX, data.currNumY)
-  context.font = "20px Arial"
-  context.fillText(data.currNumText, data.currNumX, data.currNumY - data.boxH)
   context.beginPath()
-  context.strokeStyle = "black"
   context.rect(data.currNumX - data.boxW/2, data.currNumY - data.boxH/2,
     data.boxW, data.boxH)
+  context.fillRect(data.currNumX - data.boxW/2, data.currNumY - data.boxH/2,
+    data.boxW, data.boxH)
   context.stroke()
+  context.font = "30px fantasy"
+  context.fillStyle = "black"
+  if data.currNumber == 0: drawNum = ""
+  else: drawNum = str(data.currNumber)
+  context.fillText(drawNum, data.currNumX, data.currNumY)
+  context.fillStyle = "black"
+  context.fillText(data.currNumText, data.currNumX, data.currNumY - data.boxH)
   context.closePath()
 
 def drawSelectedBox():
   context.beginPath()
-  context.strokeStyle = "red"
+  context.strokeStyle = "#775B46"
   context.lineWidth = 5
   x = data.selectCol * data.boxW + data.xMargin
   y = data.selectRow * data.boxH + data.yMargin
   context.rect(x,y,data.boxW, data.boxH)
   context.stroke()
+  context.closePath()
+
+def drawMarkBoxes():
+  context.beginPath()
+  context.lineWidth = 5
+  context.fillStyle = "black"
+  context.font = "15px fantasy"
+  context.fillText(data.markText, data.markBoxStartX + 20,
+    data.markBoxStartY - data.yMargin/2)
+  for row in range(9):
+    x = data.markBoxStartX
+    y = data.markBoxStartY + data.markBoxSize * row
+    textx = x + data.markBoxSize/2
+    texty = y + data.markBoxSize/2
+    context.fillStyle = "#EBDDCB"
+    context.rect(x,y, data.markBoxSize, data.markBoxSize)
+    context.fillRect(x,y, data.markBoxSize, data.markBoxSize)
+    context.stroke()
+    context.fillStyle = "black"
+    context.fillText(str(data.markValues[row]), textx, texty)
   context.closePath()
 
 def draw():
@@ -198,7 +304,8 @@ def draw():
   drawBoardLines()
   drawCurrNum()
   drawSelectedBox()
-  
+  if data.markActive:
+    drawMarkBoxes()
 
 
 ##################################################################
