@@ -20,8 +20,8 @@ class ServerFramework(BaseHTTPRequestHandler):
 
   def do_GET(self):
     # basing get handler - overrides BaseHTTPRequestHandler
-    returnData = self.onGetRequest(self)
-    returnData = returnData if returnData else "hello world"
+    returnData = self.onGetRequest()
+    # returnData = returnData if returnData else "hello world"
     # executing protocol to allow CORS (cross-origin resource sharing)
     self.send_response(200)
     self.send_header('Access-Control-Allow-Origin', '*')
@@ -46,11 +46,7 @@ class ServerFramework(BaseHTTPRequestHandler):
     self.end_headers()
     # send response back to client
     self.wfile.write(returnData)
-    retun
-
-  def initServer(self):
-    # used to initialize things like persistent variables for storage purposes
-    pass
+    return
 
   def onPostRequest(self, data): 
     # called on post requests
@@ -61,19 +57,10 @@ class ServerFramework(BaseHTTPRequestHandler):
   def onGetRequest(self):
     # called on get requests to server
     # returns : a string message to be sent back to the client
+    return ""
 
-  def run(self, PORT_NUMBER = 8080):
-    self.initServer()
-    self.server = HTTPServer(("", PORT_NUMBER), ServerFramework)
+class BasicServer(object):
+
+  def run(self, RequestHandleClass, PORT_NUMBER = 8080):
+    self.server = HTTPServer(("", PORT_NUMBER), RequestHandleClass)
     self.server.serve_forever()
-
-
-
-
-
-
-
-
-
-server = HTTPServer(("", PORT_NUMBER), ServerFramework)
-server.serve_forever()
